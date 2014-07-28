@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body style="padding: 0; margin: 0">
+<canvas id="c" width="800" height="600"></canvas>
+</body>
+
+<script>
+    var N = 400;
+    var R = 2;
+    var S = 10;
+    var W = 800;
+    var H = 600;
+    var V = 0.5;
+
+    function c(start, end) {
+        return ((Math.random() * (end - start) + start) >> 0).toString(16);
+    }
+
+    function createGrass(x, y, size) {
+        var g = [];
+        for (var i = 0; i < S; i++) {
+            g.push(0);
+        }
+        g.x = x;
+        g.y = y;
+        g.size = size;
+        g.color = c(0, 2) + c(2, 7) + c(0, 2);
+        g.alpha = Math.random();
+
+        return g;
+    }
+
+    function createWind(x, y, size, speedX, speedY) {
+        return {
+            x: x,
+            y: y,
+            size: size,
+            duration: 180,
+            speedX: speedX,
+            speedY: speedY,
+            power: Math.random() * 1.5 + 0.3
+        };
+    }
+
+
+    var canvas = document.getElementById('c');
+    var ctx = canvas.getContext('2d');
+
+    var winds = [];
+    var grasses = [];
+
+    for (var i = 0; i < N; i++) {
+        grasses.push(createGrass(Math.random() * W, Math.random() * H, Math.random() * 15 + 12));
+    }
+
+
+    function render() {
+        canvas.width = canvas.width;
+        ctx.fillStyle = '#150';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        for (var i = 0; i < grasses.length; i++) {
+            var grass = grasses[i];
+            ctx.strokeStyle = grass.color;
+            ctx.globalAlpha = grass.alpha;
+            var pos = {x: grass.x, y: grass.y};
+
+            for (var j = 0; j < S; j++) {
+                ctx.beginPath();
+                ctx.moveTo(pos.x, pos.y);
+                changePos(pos, grass[j], grass.size);
+                ctx.lineWidth=(S-j)/3;
+                ctx.lineTo(pos.x, pos.y);
+                ctx.stroke();
+            }
+        }
+    }
+
+    function frame() {
+        for (var i = 0; i < grasses.length; i++) {
+            var grass = grasses[i];
+            var dest = 0;
+            for (var j = 0; j < S; j++) {
+                grass[j] = (grass[j] * (R * grass.size / V) + dest) / (R * grass.size / V + 1);
+                dest = grass[j];
+            }
+
+            for (var j = 0; j < winds.length; j++) {
+                var wind = winds[j];
+                var xd = grass.x - wind.x;
+                var yd = grass.y - wind.y;
+                var dist = Math.sqrt(xd * xd + yd * yd);
+                if (dist < wind.size) {
+                    for (var k = 0; k < S; k++) {
+                        grass[k] = (grass[k] * 20 - (70 / S * wind.power * k)) / 21;
+                    }
+                }
+            }
+        }
+        for (var i = 0; i < winds.length; i++) {
+            var wind = winds[i];
+
+            wind.x += wind.speedX;
+            wind.y += wind.speedY;
+
+            if (wind.duration-- <= 0) {
+                winds.splice(i, 1);
+                i--;
+            }
+        }
+
+        if (Math.random() < 0.5) {
+            winds.push(createWind(-100, Math.random() * 2200 - 200, Math.random() * 200, 8 + Math.random() * 10, Math.random() * 10 - 5));
+        }
+    }
+
+    function changePos(pos, dir, size) {
+        pos.x -= Math.sin(dir / 180 * Math.PI) * size;
+        pos.y -= Math.cos(dir / 180 * Math.PI) * size;
+    }
+
+    function logic() {
+        webkitRequestAnimationFrame(logic);
+        render();
+        frame();
+    }
+
+    logic();
+
+
+</script>
+
+</html>
